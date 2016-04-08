@@ -6,6 +6,9 @@ import requests
 
 
 def hash_password(password):
+    """
+    Normal MD5, except add c if a byte of the digest is less than 10.
+    """
     password_md5 = hashlib.md5(password.encode('utf-8')).hexdigest()
     for i in range(0, len(password_md5), 2):
         if password_md5[i] == '0':
