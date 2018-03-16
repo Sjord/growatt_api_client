@@ -77,5 +77,5 @@ if __name__ == "__main__":
     print(plant_info)
 
     plant_id = plant_info['data'][0]['plantId']
-    plant_detail = api.plant_detail(23528, Timespan.day, datetime.date.today())
+    plant_detail = api.plant_detail(plant_id, Timespan.day, datetime.date.today())
     print(plant_detail)
