@@ -2,6 +2,8 @@ from enum import IntEnum
 import datetime
 import hashlib
 import json
+from typing import List, Dict
+
 import requests
 
 
@@ -48,12 +50,16 @@ class GrowattApi:
         data = json.loads(response.content.decode('utf-8'))
         return data['back']
 
-    def plant_detail(self, plant_id, timespan, date):
+    def plant_detail(self, plant_id, timespan=Timespan.day, date=None):
         assert timespan in Timespan
-        if timespan == Timespan.day:
-            date_str = date.strftime('%Y-%m-%d')
-        elif timespan == Timespan.month:
+
+        if not date:
+            date = datetime.date.today()
+
+        if timespan == Timespan.month:
             date_str = date.strftime('%Y-%m')
+        else:
+            date_str = date.strftime('%Y-%m-%d')
 
         response = self.session.get(self.get_url('PlantDetailAPI.do'), params={
             'plantId': plant_id,
@@ -64,18 +70,15 @@ class GrowattApi:
         return data['back']
 
 
-if __name__ == "__main__":
-    username = ...
-    password = ...
+def extract_energy(plant_info_data: List[Dict[str, str]]) -> float:
+    kwhs = [_['todayEnergy'] for _ in plant_info_data]
+    energies = [float(_.split(' ')[0]) for _ in kwhs]
+    return sum(energies)
 
-    assert hash_password("banaan") == "31d674be46e1ba6b54388a671cc9accb"
 
+def todays_energy_total(username: str, password: str):
     api = GrowattApi()
     login_res = api.login(username, password)
     user_id = login_res['userId']
     plant_info = api.plant_list(user_id)
-    print(plant_info)
-
-    plant_id = plant_info['data'][0]['plantId']
-    plant_detail = api.plant_detail(plant_id, Timespan.day, datetime.date.today())
-    print(plant_detail)
+    return extract_energy(plant_info['data'])
