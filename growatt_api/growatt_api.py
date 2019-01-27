@@ -69,16 +69,20 @@ class GrowattApi:
         data = json.loads(response.content.decode('utf-8'))
         return data['back']
 
+    def _extract_energy(self, plant_info_data: List[Dict[str, str]], key: str) -> float:
+        kwhs = [_[key] for _ in plant_info_data]
+        energies = [float(_.split(' ')[0]) for _ in kwhs]
+        return sum(energies)
 
-def extract_energy(plant_info_data: List[Dict[str, str]]) -> float:
-    kwhs = [_['todayEnergy'] for _ in plant_info_data]
-    energies = [float(_.split(' ')[0]) for _ in kwhs]
-    return sum(energies)
+    def _plant_info(self, username: str, password: str):
+        login_res = self.login(username, password)
+        user_id = login_res['userId']
+        return self.plant_list(user_id)
 
+    def todays_energy_total(self, username: str, password: str):
+        plant_info = self._plant_info(username, password)
+        return self._extract_energy(plant_info['data'], 'todayEnergy')
 
-def todays_energy_total(username: str, password: str):
-    api = GrowattApi()
-    login_res = api.login(username, password)
-    user_id = login_res['userId']
-    plant_info = api.plant_list(user_id)
-    return extract_energy(plant_info['data'])
+    def global_energy_total(self, username: str, password: str):
+        plant_info = self._plant_info(username, password)
+        return self._extract_energy(plant_info['data'], 'totalEnergy')

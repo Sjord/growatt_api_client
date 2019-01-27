@@ -20,7 +20,7 @@ def test_extract_single_energy():
          'currentPower': '142 W'}
     ]
 
-    assert victim.extract_energy(plant_info_data) == 0.6
+    assert victim.GrowattApi()._extract_energy(plant_info_data, 'todayEnergy') == 0.6
 
 
 def test_extract_multiple_energy():
@@ -41,7 +41,7 @@ def test_extract_multiple_energy():
          'currentPower': '142 W'}
     ]
 
-    assert victim.extract_energy(plant_info_data) == 1.2
+    assert victim.GrowattApi()._extract_energy(plant_info_data, 'todayEnergy') == 1.2
 
 
 def test_login():
@@ -87,4 +87,4 @@ def test_today_energy_total():
         m.get('https://server.growatt.com/PlantListAPI.do?userId=1',
               text=json.dumps({'back': dummy_plant_info}))
 
-        assert victim.todays_energy_total('foo', 'bar') == 0.6
+        assert victim.GrowattApi().todays_energy_total('foo', 'bar') == 0.6
