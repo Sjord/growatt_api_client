@@ -2,6 +2,8 @@ from enum import IntEnum
 import datetime
 import hashlib
 import json
+from typing import List, Dict
+
 import requests
 import sys
 
@@ -51,12 +53,16 @@ class GrowattApi:
         data = json.loads(response.content.decode("utf-8"))
         return data["back"]
 
-    def plant_detail(self, plant_id, timespan, date):
+    def plant_detail(self, plant_id, timespan=Timespan.day, date=None):
         assert timespan in Timespan
-        if timespan == Timespan.day:
-            date_str = date.strftime("%Y-%m-%d")
-        elif timespan == Timespan.month:
+
+        if not date:
+            date = datetime.date.today()
+
+        if timespan == Timespan.month:
             date_str = date.strftime("%Y-%m")
+        else:
+            date_str = date.strftime("%Y-%m-%d")
 
         response = self.session.get(
             self.get_url("PlantDetailAPI.do"),
@@ -65,19 +71,20 @@ class GrowattApi:
         data = json.loads(response.content.decode("utf-8"))
         return data["back"]
 
+    def _extract_energy(self, plant_info_data: List[Dict[str, str]], key: str) -> float:
+        kwhs = [_[key] for _ in plant_info_data]
+        energies = [float(_.split(' ')[0]) for _ in kwhs]
+        return sum(energies)
 
-if __name__ == "__main__":
-    username = sys.argv[1]
-    password = sys.argv[2]
+    def _plant_info(self, username: str, password: str):
+        login_res = self.login(username, password)
+        user_id = login_res['userId']
+        return self.plant_list(user_id)
 
-    assert hash_password("banaan") == "31d674be46e1ba6b54388a671cc9accb"
+    def todays_energy_total(self, username: str, password: str):
+        plant_info = self._plant_info(username, password)
+        return self._extract_energy(plant_info['data'], 'todayEnergy')
 
-    api = GrowattApi()
-    login_res = api.login(username, password)
-    user_id = login_res["userId"]
-    plant_info = api.plant_list(user_id)
-    print(plant_info)
-
-    plant_id = plant_info["data"][0]["plantId"]
-    plant_detail = api.plant_detail(plant_id, Timespan.day, datetime.date.today())
-    print(plant_detail)
+    def global_energy_total(self, username: str, password: str):
+        plant_info = self._plant_info(username, password)
+        return self._extract_energy(plant_info['data'], 'totalEnergy')
