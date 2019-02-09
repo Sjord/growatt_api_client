@@ -17,4 +17,5 @@ setup(
     packages=["growatt"],
     install_requires=requirements,
     license="OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    test_suite="test",
 )
