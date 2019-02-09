@@ -5,8 +5,6 @@ from . import hash_password, GrowattApi, Timespan
 username = sys.argv[1]
 password = sys.argv[2]
 
-assert hash_password("banaan") == "31d674be46e1ba6b54388a671cc9accb"
-
 api = GrowattApi()
 login_res = api.login(username, password)
 user_id = login_res["userId"]
