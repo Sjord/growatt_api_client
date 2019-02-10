@@ -22,6 +22,14 @@ class Timespan(IntEnum):
     month = 2
 
 
+class GrowattApiError(RuntimeError):
+    pass
+
+
+class LoginError(GrowattApiError):
+    pass
+
+
 class GrowattApi:
     server_url = "https://server.growatt.com/"
 
@@ -38,7 +46,10 @@ class GrowattApi:
             data={"userName": username, "password": password_md5},
         )
         data = json.loads(response.content.decode("utf-8"))
-        return data["back"]
+        result = data["back"]
+        if not "success" in result or not result["success"]:
+            raise LoginError()
+        return result
 
     def plant_list(self, user_id):
         response = self.session.get(
@@ -47,7 +58,7 @@ class GrowattApi:
             allow_redirects=False,
         )
         if response.status_code != 200:
-            raise RuntimeError("Request failed: %s", response)
+            raise GrowattApiError("Request failed: %s" % response)
         data = json.loads(response.content.decode("utf-8"))
         return data["back"]
 
