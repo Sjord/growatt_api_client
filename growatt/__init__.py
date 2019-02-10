@@ -45,11 +45,10 @@ class GrowattApi:
             self.get_url("LoginAPI.do"),
             data={"userName": username, "password": password_md5},
         )
-        data = response.json()
-        result = data["back"]
-        if not "success" in result or not result["success"]:
-            raise LoginError()
-        return result
+        try:
+            return self._back_success_response(response)
+        except GrowattApiError:
+            raise LoginError
 
     def plant_list(self):
         """
@@ -59,10 +58,7 @@ class GrowattApi:
             self.get_url("PlantListAPI.do"),
             allow_redirects=False,
         )
-        if response.status_code != 200:
-            raise GrowattApiError("Request failed: %s" % response)
-        data = response.json()
-        return data["back"]
+        return self._back_success_response(response)
 
     def plant_detail(self, plant_id, timespan, date):
         assert timespan in Timespan
@@ -75,5 +71,17 @@ class GrowattApi:
             self.get_url("PlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
+        return self._back_success_response(response)
+
+    def _back_success_response(self, response):
+        """
+        Check and return the response, where we expect a "back" key with a
+        "success" item.
+        """
+        if response.status_code != 200:
+            raise GrowattApiError("Request failed: %s" % response)
         data = response.json()
-        return data["back"]
+        result = data["back"]
+        if not "success" in result or not result["success"]:
+            raise GrowattApiError()
+        return result
