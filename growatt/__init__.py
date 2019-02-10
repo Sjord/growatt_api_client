@@ -37,6 +37,9 @@ class GrowattApi:
         return self.server_url + page
 
     def login(self, username, password):
+        """
+        Log in to the Growatt server, or raise an exception if this fails.
+        """
         password_md5 = hash_password(password)
         response = self.session.post(
             self.get_url("LoginAPI.do"),
@@ -48,10 +51,12 @@ class GrowattApi:
             raise LoginError()
         return result
 
-    def plant_list(self, user_id):
+    def plant_list(self):
+        """
+        Retrieve all plants beloning to the current user.
+        """
         response = self.session.get(
             self.get_url("PlantListAPI.do"),
-            params={"userId": user_id},
             allow_redirects=False,
         )
         if response.status_code != 200:

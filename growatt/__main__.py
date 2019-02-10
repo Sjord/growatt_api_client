@@ -6,9 +6,8 @@ username = sys.argv[1]
 password = sys.argv[2]
 
 api = GrowattApi()
-login_res = api.login(username, password)
-user_id = login_res["userId"]
-plant_info = api.plant_list(user_id)
+api.login(username, password)
+plant_info = api.plant_list()
 print(plant_info)
 
 plant_id = plant_info["data"][0]["plantId"]
