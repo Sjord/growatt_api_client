@@ -1,9 +1,6 @@
 from enum import IntEnum
-import datetime
 import hashlib
-import json
 import requests
-import sys
 
 
 def hash_password(password):
@@ -45,7 +42,7 @@ class GrowattApi:
             self.get_url("LoginAPI.do"),
             data={"userName": username, "password": password_md5},
         )
-        data = json.loads(response.content.decode("utf-8"))
+        data = response.json()
         result = data["back"]
         if not "success" in result or not result["success"]:
             raise LoginError()
@@ -59,7 +56,7 @@ class GrowattApi:
         )
         if response.status_code != 200:
             raise GrowattApiError("Request failed: %s" % response)
-        data = json.loads(response.content.decode("utf-8"))
+        data = response.json()
         return data["back"]
 
     def plant_detail(self, plant_id, timespan, date):
@@ -73,5 +70,5 @@ class GrowattApi:
             self.get_url("PlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
-        data = json.loads(response.content.decode("utf-8"))
+        data = response.json()
         return data["back"]
