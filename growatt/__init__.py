@@ -17,6 +17,20 @@ def hash_password(password):
 class Timespan(IntEnum):
     day = 1
     month = 2
+    year = 3
+    total = 4
+
+    def format_date(self, date):
+        if self == Timespan.day:
+            return date.strftime("%Y-%m-%d")
+        elif self == Timespan.month:
+            return date.strftime("%Y-%m")
+        elif self == Timespan.year:
+            return date.strftime("%Y")
+        elif self == Timespan.total:
+            return ""
+        else:
+            raise ValueError(self)
 
 
 class GrowattApiError(RuntimeError):
@@ -55,17 +69,13 @@ class GrowattApi:
         Retrieve all plants beloning to the current user.
         """
         response = self.session.get(
-            self.get_url("PlantListAPI.do"),
-            allow_redirects=False,
+            self.get_url("PlantListAPI.do"), allow_redirects=False
         )
         return self._back_success_response(response)
 
     def plant_detail(self, plant_id, timespan, date):
         assert timespan in Timespan
-        if timespan == Timespan.day:
-            date_str = date.strftime("%Y-%m-%d")
-        elif timespan == Timespan.month:
-            date_str = date.strftime("%Y-%m")
+        date_str = timespan.format_date(date)
 
         response = self.session.get(
             self.get_url("PlantDetailAPI.do"),
