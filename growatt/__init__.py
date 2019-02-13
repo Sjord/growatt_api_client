@@ -46,6 +46,14 @@ class GrowattApi:
 
     def __init__(self):
         self.session = requests.Session()
+        self.logged_in = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.logged_in:
+            self.logout()
 
     def get_url(self, page):
         return self.server_url + page
@@ -60,7 +68,9 @@ class GrowattApi:
             data={"userName": username, "password": password_md5},
         )
         try:
-            return self._back_success_response(response)
+            result = self._back_success_response(response)
+            self.logged_in = True
+            return result
         except GrowattApiError:
             raise LoginError
 
@@ -121,7 +131,8 @@ class GrowattApi:
         return response.json()
 
     def logout(self):
-        response = self.session.get(self.get_url("logout.do"))
+        self.session.get(self.get_url("logout.do"))
+        self.logged_in = False
 
     def _back_success_response(self, response):
         """
