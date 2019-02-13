@@ -116,9 +116,12 @@ class GrowattApi:
         response = self.session.post(
             self.get_url("newPlantAPI.do"),
             params={"action": "getUserCenterEnertyData"},  # sic
-            data={"language": 1}
+            data={"language": 1},
         )
         return response.json()
+
+    def logout(self):
+        response = self.session.get(self.get_url("logout.do"))
 
     def _back_success_response(self, response):
         """
