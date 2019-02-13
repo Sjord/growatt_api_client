@@ -74,6 +74,13 @@ class GrowattApi:
         return self._back_success_response(response)
 
     def plant_detail(self, plant_id, timespan, date):
+        """
+        Return amount of power generated for the given timespan.
+        * Timespan.day : power on each half hour of the day.
+        * Timespan.month : power on each day of the month.
+        * Timespan.year: power on each month of the year.
+        * Timespan.total: power on each year. `date` parameter is ignored.
+        """
         assert timespan in Timespan
         date_str = timespan.format_date(date)
 
@@ -82,6 +89,36 @@ class GrowattApi:
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
         return self._back_success_response(response)
+
+    def new_plant_detail(self, plant_id, timespan, date):
+        """
+        Return amount of power generated for the given timespan.
+        * Timespan.day : power on each five minutes of the day.
+        * Timespan.month : power on each day of the month.
+        * Timespan.year: power on each month of the year.
+        * Timespan.total: power on each year. `date` parameter is ignored.
+        """
+        assert timespan in Timespan
+        date_str = timespan.format_date(date)
+
+        response = self.session.get(
+            self.get_url("newPlantDetailAPI.do"),
+            params={"plantId": plant_id, "type": timespan.value, "date": date_str},
+        )
+        return self._back_success_response(response)
+
+    def get_user_center_energy_data(self):
+        """
+        Get overall data including:
+        * powerValue - current power in Watt
+        * todayValue - power generated today
+        """
+        response = self.session.post(
+            self.get_url("newPlantAPI.do"),
+            params={"action": "getUserCenterEnertyData"},  # sic
+            data={"language": 1}
+        )
+        return response.json()
 
     def _back_success_response(self, response):
         """
