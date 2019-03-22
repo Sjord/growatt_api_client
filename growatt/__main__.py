@@ -1,6 +1,6 @@
 import sys
 import datetime
-from . import hash_password, GrowattApi, Timespan
+from growatt import hash_password, GrowattApi, Timespan
 
 username = sys.argv[1]
 password = sys.argv[2]
