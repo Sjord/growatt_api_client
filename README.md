@@ -18,16 +18,16 @@ Run the following commands to set up a new virtualenv and run the growatt API ex
 
     git clone https://github.com/Sjord/growatt_api_client
     cd growatt_api_client
-    python3 -m venv venv                # create a new virtual environment in the directory 'venv'
-    . venv/bin/activate                 # activate this environment
-    ./setup.py install                  # install all dependencies
-    python -m growatt username password # retrieve data for today
+    python3 -m venv venv                    # create a new virtual environment in the directory 'venv'
+    . venv/bin/activate                     # activate this environment
+    ./setup.py install                      # install all dependencies
+    python -m growatt 'username' 'password' # retrieve data for today
 
 After setting up like this, you can just run the python from the virtualenv each time you want to run it:
 
-    venv/bin/python -m growatt username password
+    venv/bin/python -m growatt 'username' 'password'
 
 If you want to create your own client, start from growatt/\_\_main\_\_.py. Copy it and change it to your liking, and then run it like this:
 
-    venv/bin/python myscript.py username password
+    venv/bin/python myscript.py 'username' 'password'
 
