@@ -144,5 +144,5 @@ class GrowattApi:
         data = response.json()
         result = data["back"]
         if not "success" in result or not result["success"]:
-            raise GrowattApiError()
+            raise GrowattApiError(result)
         return result
