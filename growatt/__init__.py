@@ -131,6 +131,9 @@ class GrowattApi:
         return response.json()
 
     def get_all_device_list(self, plant_id):
+        """
+        Get information on each device/inverter.
+        """
         response = self.session.post(
             self.get_url("newTwoPlantAPI.do"),
             params={
