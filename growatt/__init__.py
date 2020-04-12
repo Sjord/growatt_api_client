@@ -130,6 +130,19 @@ class GrowattApi:
         )
         return response.json()
 
+    def get_all_device_list(self, plant_id):
+        """
+        Get information on each device/inverter.
+        """
+        response = self.session.post(
+            self.get_url("newTwoPlantAPI.do"),
+            params={
+                "op": "getAllDeviceList",
+                "plantId": plant_id
+            }
+        )
+        return response.json()
+
     def logout(self):
         self.session.get(self.get_url("logout.do"))
         self.logged_in = False
