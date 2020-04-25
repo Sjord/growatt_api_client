@@ -143,6 +143,53 @@ class GrowattApi:
         )
         return response.json()
 
+    def get_energy_prod_and_cons_data(self, plant_id, storage_sn, date, type=0):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyProdAndConsData"},
+            data={
+                "plantId": plant_id,
+                "storageSn": storage_sn,
+                "date": date,
+                "type": type,
+            }
+        )
+        return self._obj_success_response(response)
+
+    def get_storage_energy_data(self, plant_id, storage_sn, date):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getStorageEnergyData"},
+            data={
+                "plantId": plant_id,
+                "storageSn": storage_sn,
+                "date": date,
+            }
+        )
+        return self._obj_success_response(response)
+
+    def get_system_status_data(self, plant_id, storage_sn):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getSystemStatusData"},
+            data={
+                "plantId": plant_id,
+                "storageSn": storage_sn,
+            }
+        )
+        return self._obj_success_response(response)
+
+    def get_energy_overview_data(self, plant_id, storage_sn):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyOverviewData"},
+            data={
+                "plantId": plant_id,
+                "storageSn": storage_sn,
+            }
+        )
+        return self._obj_success_response(response)
+
     def logout(self):
         self.session.get(self.get_url("logout.do"))
         self.logged_in = False
@@ -159,3 +206,11 @@ class GrowattApi:
         if not "success" in result or not result["success"]:
             raise GrowattApiError(result)
         return result
+
+    def _obj_success_response(self, response):
+        if response.status_code != 200:
+            raise GrowattApiError("Request failed: %s" % response)
+        data = response.json()
+        if data["result"] != 1 or "obj" not in data:
+            raise GrowattApiError(data)
+        return data["obj"]
