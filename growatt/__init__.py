@@ -190,6 +190,16 @@ class GrowattApi:
         )
         return self._obj_success_response(response)
 
+    def get_storage_params(self, storage_sn):
+        response = self.session.get(
+            self.get_url("newStorageAPI.do"),
+            params={
+                "op": "getStorageParams",
+                "storageId": storage_sn,
+            }
+        )
+        return response.json()["storageDetailBean"]
+
     def logout(self):
         self.session.get(self.get_url("logout.do"))
         self.logged_in = False
