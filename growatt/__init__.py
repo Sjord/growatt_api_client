@@ -130,6 +130,14 @@ class GrowattApi:
         )
         return response.json()
 
+    def get_user_center_energy_data_by_plant_id(self, plant_id):
+        response = self.session.post(
+            self.get_url("newTwoPlantAPI.do"),
+            params={"op": "getUserCenterEnertyDataByPlantid"},
+            data={"plantId": plant_id, "language": 1},
+        )
+        return response.json()
+
     def get_all_device_list(self, plant_id):
         """
         Get information on each device/inverter.
