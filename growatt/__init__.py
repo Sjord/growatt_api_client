@@ -14,6 +14,28 @@ def hash_password(password):
     return password_md5
 
 
+def _back_success_response(response):
+    """
+    Check and return the response, where we expect a "back" key with a
+    "success" item.
+    """
+    if response.status_code != 200:
+        raise GrowattApiError("Request failed: %s" % response)
+    data = response.json()
+    result = data["back"]
+    if not "success" in result or not result["success"]:
+        raise GrowattApiError(result)
+    return result
+
+def _obj_success_response(response):
+    if response.status_code != 200:
+        raise GrowattApiError("Request failed: %s" % response)
+    data = response.json()
+    if data["result"] != 1 or "obj" not in data:
+        raise GrowattApiError(data)
+    return data["obj"]
+
+
 class Timespan(IntEnum):
     day = 1
     month = 2
@@ -68,7 +90,7 @@ class GrowattApi:
             data={"userName": username, "password": password_md5},
         )
         try:
-            result = self._back_success_response(response)
+            result = _back_success_response(response)
             self.logged_in = True
             return result
         except GrowattApiError:
@@ -81,7 +103,7 @@ class GrowattApi:
         response = self.session.get(
             self.get_url("PlantListAPI.do"), allow_redirects=False
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def plant_detail(self, plant_id, timespan, date):
         """
@@ -98,7 +120,7 @@ class GrowattApi:
             self.get_url("PlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def new_plant_detail(self, plant_id, timespan, date):
         """
@@ -115,7 +137,7 @@ class GrowattApi:
             self.get_url("newPlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def get_user_center_energy_data(self):
         """
@@ -143,84 +165,146 @@ class GrowattApi:
         )
         return response.json()
 
-    def get_energy_prod_and_cons_data(self, plant_id, storage_sn, date, type=0):
-        response = self.session.post(
-            self.get_url("newStorageAPI.do"),
-            params={"op": "getEnergyProdAndConsData"},
-            data={
-                "plantId": plant_id,
-                "storageSn": storage_sn,
-                "date": date,
-                "type": type,
-            }
-        )
-        return self._obj_success_response(response)
-
-    def get_storage_energy_data(self, plant_id, storage_sn, date):
-        response = self.session.post(
-            self.get_url("newStorageAPI.do"),
-            params={"op": "getStorageEnergyData"},
-            data={
-                "plantId": plant_id,
-                "storageSn": storage_sn,
-                "date": date,
-            }
-        )
-        return self._obj_success_response(response)
-
-    def get_system_status_data(self, plant_id, storage_sn):
-        response = self.session.post(
-            self.get_url("newStorageAPI.do"),
-            params={"op": "getSystemStatusData"},
-            data={
-                "plantId": plant_id,
-                "storageSn": storage_sn,
-            }
-        )
-        return self._obj_success_response(response)
-
-    def get_energy_overview_data(self, plant_id, storage_sn):
-        response = self.session.post(
-            self.get_url("newStorageAPI.do"),
-            params={"op": "getEnergyOverviewData"},
-            data={
-                "plantId": plant_id,
-                "storageSn": storage_sn,
-            }
-        )
-        return self._obj_success_response(response)
-
-    def get_storage_params(self, storage_sn):
-        response = self.session.get(
-            self.get_url("newStorageAPI.do"),
-            params={
-                "op": "getStorageParams",
-                "storageId": storage_sn,
-            }
-        )
-        return response.json()["storageDetailBean"]
-
     def logout(self):
         self.session.get(self.get_url("logout.do"))
         self.logged_in = False
 
-    def _back_success_response(self, response):
-        """
-        Check and return the response, where we expect a "back" key with a
-        "success" item.
-        """
-        if response.status_code != 200:
-            raise GrowattApiError("Request failed: %s" % response)
-        data = response.json()
-        result = data["back"]
-        if not "success" in result or not result["success"]:
-            raise GrowattApiError(result)
-        return result
+    def storage(self, plant_id, device_sn):
+        return Storage(self, plant_id, device_sn)
 
-    def _obj_success_response(self, response):
-        if response.status_code != 200:
-            raise GrowattApiError("Request failed: %s" % response)
-        data = response.json()
-        if data["result"] != 1 or "obj" not in data:
-            raise GrowattApiError(data)
-        return data["obj"]
+    def spa(self, plant_id, device_sn):
+        return Spa(self, plant_id, device_sn)
+
+
+class Storage:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_energy_prod_and_cons_data(self, date, type=0):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyProdAndConsData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+                "date": date,
+                "type": type,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_storage_energy_data(self, date):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getStorageEnergyData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+                "date": date,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_system_status_data(self):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getSystemStatusData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview_data(self):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyOverviewData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_storage_params(self):
+        response = self.session.get(
+            self.get_url("newStorageAPI.do"),
+            params={
+                "op": "getStorageParams",
+                "storageId": self.device_sn,
+            }
+        )
+        return response.json()["storageDetailBean"]
+
+
+class Spa:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_system_status(self):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getSystemStatus",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_spa_energy(self, date):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getSpaEnergy",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+                "date": date,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview(self):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getEnergyOverview",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_prod_and_cons_data(self, date, timespan):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getEnergyProdAndConsData",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+                "date": date,
+                "type": timespan.value
+            }
+        )
+        return _obj_success_response(response)
