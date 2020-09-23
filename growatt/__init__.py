@@ -295,6 +295,9 @@ class Spa:
         return _obj_success_response(response)
 
     def get_energy_prod_and_cons_data(self, date, timespan):
+        assert timespan in Timespan
+        date_str = timespan.format_date(date)
+
         response = self.session.post(
             self.get_url("newSpaApi.do"),
             params={
@@ -303,8 +306,8 @@ class Spa:
             data={
                 "plantId": self.plant_id,
                 "spaId": self.device_sn,
-                "date": date,
-                "type": timespan.value
+                "date": date_str,
+                "type": timespan.value - 1
             }
         )
         return _obj_success_response(response)
