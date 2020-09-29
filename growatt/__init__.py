@@ -175,6 +175,9 @@ class GrowattApi:
     def spa(self, plant_id, device_sn):
         return Spa(self, plant_id, device_sn)
 
+    def mix(self, plant_id, device_sn):
+        return Mix(self, plant_id, device_sn)
+
 
 class Storage:
     def __init__(self, api, plant_id, device_sn):
@@ -309,5 +312,74 @@ class Spa:
                 "date": date_str,
                 "type": timespan.value - 1
             }
+        )
+        return _obj_success_response(response)
+
+
+class Mix:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_system_status(self):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getSystemStatus",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_mix_energy(self, date):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getMixEnergy",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+                "date": date,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview(self):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getEnergyOverview",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_energy_prod_and_cons(self, date, timespan):
+        assert timespan in Timespan
+        date_str = timespan.format_date(date)
+
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getEnergyProdAndCons",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+                "date": date_str,
+                "type": timespan.value - 1,
+            },
         )
         return _obj_success_response(response)
