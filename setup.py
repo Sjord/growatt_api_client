@@ -21,11 +21,11 @@ setup(
     author="Sjoerd Langkemper",
     packages=["growatt"],
     install_requires=requirements,
-    license="OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    license="OSI Approved :: MIT License",
     test_suite="test",
     classifiers=[
         "Development Status :: 4 - Beta",
-        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
     ],
 )
