@@ -1,6 +1,7 @@
 import re
 import json
 import sys
+import os
 import os.path
 import collections
 import ruamel.yaml as yaml
@@ -14,8 +15,42 @@ urls_re = re.compile(r'(Urlsutil|Urlsutil.getInstance\(\)|new Urlsutil\(\))\.(\w
 params_re = re.compile(r'(?s)(\n\s*)public void Params\((.*?)\1}')
 map_re = re.compile(r'map.put\("([^"]*)", .*\);')
 
+class Url:
+    def __init__(self, name, url):
+        self.name = name
+        self.full_url = url
+        path, params = strip_query(url)
+        self.base_url = path
+        self.get_params = params
+        self.post_params = []
+    
+    def add_post_parameter(self, name):
+        self.post_params.append(name)
+
+class Urls:
+    def __init__(self):
+        self.urls = []
+
+    def add(self, url):
+        self.urls.append(url)
+
+    def __getitem__(self, name):
+        for u in self.urls:
+            if u.name == name:
+                return u
+        return None
+    
+    def __contains__(self, name):
+        for u in self.urls:
+            if u.name == name:
+                return True
+        return False
+
+
 def get_url_ref(code):
     m = urls_re.search(code)
+    if not m:
+        return None
     return m.group(2)
 
 
@@ -80,7 +115,34 @@ def merge_paths(orig, new):
         orig["parameters"] = new["parameters"]
         
 
-if __name__ == "__main__":
+
+
+
+def add_posts(urls):
+    for root, dirs, files in os.walk(source_dir):
+        for fname in files:
+            path = os.path.join(root, fname)
+            content = read_file(path)
+            posts = postutils_re.findall(content)
+            for _, url, code in posts:
+                url_name = get_url_ref(url)
+                if url_name and url_name in urls:
+                    paramcodes = params_re.findall(code)
+                    for _, pcode in paramcodes:
+                        maps = map_re.findall(pcode)
+                        for name in maps:
+                            urls[url_name].add_post_parameter(name)
+
+
+def read_urls():
+    result = Urls()
+    urls_file = os.path.join(source_dir, "com/growatt/shinephone/util/Urlsutil.java")
+    urls = get_urls(read_file(urls_file))
+    for name, _, path in urls:
+        result.add(Url(name, path))
+    return result
+
+if False:    
     source_dir = sys.argv[1]
 
     def create_dict():
@@ -98,3 +160,8 @@ if __name__ == "__main__":
     
     print(yaml.dump(paths))
 
+if __name__ == "__main__":
+    source_dir = sys.argv[1]
+    urls = read_urls()
+    add_posts(urls)
+    print(yaml.dump(urls))
