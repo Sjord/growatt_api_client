@@ -64,12 +64,13 @@ class GrowattApi:
         """
         password_md5 = hash_password(password)
         response = self.session.post(
-            self.get_url("LoginAPI.do"),
+            self.get_url("newLoginAPI.do"),
             data={"userName": username, "password": password_md5},
         )
         try:
             result = self._back_success_response(response)
             self.logged_in = True
+            result["userId"] = result["user"]["id"]
             return result
         except GrowattApiError:
             raise LoginError
