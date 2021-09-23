@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="growatt",
-    version="0.0.2",
+    version="0.0.4",
     description="Growatt API for photovoltaic statistics",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -21,11 +21,11 @@ setup(
     author="Sjoerd Langkemper",
     packages=["growatt"],
     install_requires=requirements,
-    license="OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    license="OSI Approved :: MIT License",
     test_suite="test",
     classifiers=[
         "Development Status :: 4 - Beta",
-        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
     ],
 )
