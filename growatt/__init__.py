@@ -64,8 +64,8 @@ class LoginError(GrowattApiError):
 
 
 class GrowattApi:
-    server_url = "https://server.growatt.com/"
-
+    server_url = "https://server-api.growatt.com/" #"https://server.growatt.com/"
+    print(server_url)
     def __init__(self):
         self.session = requests.Session()
         self.logged_in = False

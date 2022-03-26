@@ -143,3 +143,9 @@ tags
 [._]*.un~
 
 # End of https://www.gitignore.io/api/vim,python
+
+#esa-custom ignore files
+data/
+myscript.py
+myscript.ipynb
+.ipynb_checkpoints/
