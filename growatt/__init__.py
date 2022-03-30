@@ -69,7 +69,6 @@ class LoginError(GrowattApiError):
 
 class GrowattApi:
     server_url = "https://server-api.growatt.com/" #"https://server.growatt.com/"
-    print(server_url)
     def __init__(self):
         self.session = requests.Session()
         self.logged_in = False
@@ -278,7 +277,7 @@ class Storage:
         L1 = [8,10,3,9,7,11,12,13,14,15,16,17,18]
         L2 = ['PPV1', 'PPV2', 'PV1 Voltage', 'PV2 Voltage', 'Battery SOC', 'VBattery', 'OutPutPower', 'OutputVoltage', 'Grid Voltage', 'EPV Today', 'EAC Today', 'Ebat Today', 'EBatDischarge Today'] 
         Ldict = {k:v for k,v in zip(L1,L2)}
-        
+
         To be implemented (in separate functions)
         At daily resolution:
         1 EPV Month, 2 EBat-Charge Month, 3 Ebat-Discharge Month, 4 EAC-Charge Month
