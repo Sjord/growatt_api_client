@@ -247,6 +247,43 @@ class Storage:
         )
         return response.json()["storageDetailBean"]
 
+    def get_storage_day_line(self, date, typ=None):
+        '''
+        API request identified from the Android ShineApp (info available by tapping on the inverter), which does not seem to be available on web interface.
+
+        /newStorageAPI.do?op=getDayLineStorage&id=NZH4BHH033&date=2022-03-26&type=12
+
+        Multiple variables available at mutliple time resolutions.
+        Type    Variable    Meaning
+
+        '''
+
+        if(typ is None):
+            # check for null or None type
+            typ = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 20, 21, 22]
+        if(isinstance(typ, int)):
+            typ = [typ] # make a list out of it
+
+        data_dict = {}
+        for t in typ:
+            response = self.session.get(
+                self.get_url("newStorageAPI.do"),
+                params={"op": "getDayLineStorage",
+                        "id": self.device_sn,
+                        "date": date,
+                        "type":str(t)}
+            )
+            #print("type", t, "response", response)
+            #print("response json", response.json())
+            if response.status_code != 200:
+                data_dict[t] =response.json() # returns ['obj'] if no error on server side    
+            # else:
+            #     data_dict[t] = response.status_code
+
+        return data_dict 
+        
+
+
 
 class Spa:
     def __init__(self, api, plant_id, device_sn):
