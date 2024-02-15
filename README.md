@@ -2,6 +2,10 @@
 
 This Python script logs in to server.growatt.com and retrieves data on solar panels.
 
+## Deprecated
+
+Use [indykoning/PyPi\_GrowattServer](https://github.com/indykoning/PyPi_GrowattServer) instead.
+
 ## Usage
 
 Create a new GrowattApi instance, log in, retrieve a list of plants and request details of these plants. An example can be found in [growatt/\_\_main\_\_.py](growatt/__main__.py), and can be run using `python -m growatt`.
