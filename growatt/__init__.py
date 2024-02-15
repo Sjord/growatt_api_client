@@ -64,7 +64,7 @@ class GrowattApi:
         """
         password_md5 = hash_password(password)
         response = self.session.post(
-            self.get_url("newLoginAPI.do"),
+            self.get_url("newTwoLoginAPI.do"),
             data={"userName": username, "password": password_md5},
         )
         try:
