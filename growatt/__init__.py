@@ -14,6 +14,32 @@ def hash_password(password):
     return password_md5
 
 
+def _back_success_response(response):
+    """
+    Check and return the response, where we expect a "back" key with a
+    "success" item.
+    """
+    if response.status_code != 200:
+        raise GrowattApiError("Request failed: %s" % response)
+    data = response.json()
+    result = data["back"]
+    if not "success" in result or not result["success"]:
+        raise GrowattApiError(result)
+    return result
+
+def _obj_success_response(response):
+    """
+    Check and return the response, where we expect a "result" key with value 1 and with
+    another key named "obj" item.
+    """
+    if response.status_code != 200:
+        raise GrowattApiError("Request failed: %s" % response)
+    data = response.json()
+    if data["result"] != 1 or "obj" not in data:
+        raise GrowattApiError(data)
+    return data["obj"]
+
+
 class Timespan(IntEnum):
     day = 1
     month = 2
@@ -42,8 +68,7 @@ class LoginError(GrowattApiError):
 
 
 class GrowattApi:
-    server_url = "https://server.growatt.com/"
-
+    server_url = "https://server-api.growatt.com/" #"https://server.growatt.com/"
     def __init__(self):
         self.session = requests.Session()
         self.logged_in = False
@@ -68,7 +93,7 @@ class GrowattApi:
             data={"userName": username, "password": password_md5},
         )
         try:
-            result = self._back_success_response(response)
+            result = _back_success_response(response)
             self.logged_in = True
             result["userId"] = result["user"]["id"]
             return result
@@ -82,7 +107,7 @@ class GrowattApi:
         response = self.session.get(
             self.get_url("PlantListAPI.do"), allow_redirects=False
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def plant_detail(self, plant_id, timespan, date):
         """
@@ -99,7 +124,7 @@ class GrowattApi:
             self.get_url("PlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def new_plant_detail(self, plant_id, timespan, date):
         """
@@ -116,7 +141,7 @@ class GrowattApi:
             self.get_url("newPlantDetailAPI.do"),
             params={"plantId": plant_id, "type": timespan.value, "date": date_str},
         )
-        return self._back_success_response(response)
+        return _back_success_response(response)
 
     def get_user_center_energy_data(self):
         """
@@ -148,15 +173,285 @@ class GrowattApi:
         self.session.get(self.get_url("logout.do"))
         self.logged_in = False
 
-    def _back_success_response(self, response):
-        """
-        Check and return the response, where we expect a "back" key with a
-        "success" item.
-        """
-        if response.status_code != 200:
-            raise GrowattApiError("Request failed: %s" % response)
-        data = response.json()
-        result = data["back"]
-        if not "success" in result or not result["success"]:
-            raise GrowattApiError(result)
-        return result
+    def storage(self, plant_id, device_sn):
+        return Storage(self, plant_id, device_sn)
+
+    def spa(self, plant_id, device_sn):
+        return Spa(self, plant_id, device_sn)
+
+    def mix(self, plant_id, device_sn):
+        return Mix(self, plant_id, device_sn)
+
+
+class Storage:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_energy_prod_and_cons_data(self, date, type=0):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyProdAndConsData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+                "date": date,
+                "type": type,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_storage_energy_data(self, date):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getStorageEnergyData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+                "date": date,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_system_status_data(self):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getSystemStatusData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview_data(self):
+        response = self.session.post(
+            self.get_url("newStorageAPI.do"),
+            params={"op": "getEnergyOverviewData"},
+            data={
+                "plantId": self.plant_id,
+                "storageSn": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_storage_params(self):
+        response = self.session.get(
+            self.get_url("newStorageAPI.do"),
+            params={
+                "op": "getStorageParams",
+                "storageId": self.device_sn,
+            }
+        )
+        return response.json()["storageDetailBean"]
+
+    def get_storage_day_line(self, date, typ=None):
+        '''
+        API request identified from the Android ShineApp (info available by tapping on the inverter), which does not seem to be available on web interface.
+
+        /newStorageAPI.do?op=getDayLineStorage&id=NZH4BHH033&date=2022-03-26&type=12
+
+        Multiple variables available at mutliple time resolutions.
+        At 5-min time resolution:
+        Type    Variable        Meaning
+        8       PPV1            Power production of PV array 1, in W
+        10      PPV2            Power production of PV array 2, in W
+        3       PV1 Voltage     Voltage of PV array 1, in V
+        9       PV2 Voltage     Voltage of PV array 2, in V
+        7       Battery SOC     State of charge of battery, in %
+        11      VBattery        Voltage of the battery, in V
+        12      OutPutPower     Power consumed by the load (or generated by the inverter), in W
+        13      OutputVoltage   Voltage of output power (load), in V
+        14      Grid Voltage    Voltage of power from the grid, in V
+        15      EPV Today       Cummulative PV production, in kWh
+        16      EAC Today       Cummulative power taken from the grid, in kWh
+        17      Ebat Today      Cummulative power charge to the battery, in kWh
+        18      EBatDischarge Today Cummulative power discharged from the battery, in kWh (although app displays W)
+        
+        useful lists & dicts
+        L1 = [8,10,3,9,7,11,12,13,14,15,16,17,18]
+        L2 = ['PPV1', 'PPV2', 'PV1 Voltage', 'PV2 Voltage', 'Battery SOC', 'VBattery', 'OutPutPower', 'OutputVoltage', 'Grid Voltage', 'EPV Today', 'EAC Today', 'Ebat Today', 'EBatDischarge Today'] 
+        Ldict = {k:v for k,v in zip(L1,L2)}
+
+        To be implemented (in separate functions)
+        At daily resolution:
+        1 EPV Month, 2 EBat-Charge Month, 3 Ebat-Discharge Month, 4 EAC-Charge Month
+        https://server-api.growatt.com/newStorageAPI.do?op=getMonthLineStorage_sacolar&id=NZH4BHH033&date=2022-03&type=1
+
+        At monthly resolution:
+        1 EPV Year, 2 EBat-Charge Year, 3 Ebat-Discharge Year, 4 EAC-Charge Year
+        https://server-api.growatt.com/newStorageAPI.do?op=getYearLineStorage_sacolar&id=NZH4BHH033&date=2022&type=1
+
+        At yearly resolution:
+        1 EPV Total, 2 EBat-Charge Total, 3 Ebat-Discharge Total, 4 EAC-Charge Total
+        https://server-api.growatt.com/newStorageAPI.do?op=getTotalLineStorage_sacolar&id=NZH4BHH033&type=1
+
+        '''
+
+        if(typ is None):
+            # check for null or None type
+            typ = [8,10,3,9,7,11,12,13,14,15,16,17,18]
+        if(isinstance(typ, int)):
+            typ = [typ] # make a list out of it
+
+        data_dict = {}
+        for t in typ:
+            response = self.session.get(
+                self.get_url("newStorageAPI.do"),
+                params={"op": "getDayLineStorage",
+                        "id": self.device_sn,
+                        "date": date,
+                        "type":str(t)}
+            )
+            if response.status_code != 200:
+                raise GrowattApiError("Request failed for type %s: %s" % (str(t), response))
+            else:
+                data = response.json()
+                data_dict[t] = data
+
+        return data_dict 
+        
+
+
+
+class Spa:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_system_status(self):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getSystemStatus",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_spa_energy(self, date):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getSpaEnergy",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+                "date": date,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview(self):
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getEnergyOverview",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+            }
+        )
+        return _obj_success_response(response)
+
+    def get_energy_prod_and_cons_data(self, date, timespan):
+        assert timespan in Timespan
+        date_str = timespan.format_date(date)
+
+        response = self.session.post(
+            self.get_url("newSpaApi.do"),
+            params={
+                "op": "getEnergyProdAndConsData",
+            },
+            data={
+                "plantId": self.plant_id,
+                "spaId": self.device_sn,
+                "date": date_str,
+                "type": timespan.value - 1
+            }
+        )
+        return _obj_success_response(response)
+
+
+class Mix:
+    def __init__(self, api, plant_id, device_sn):
+        self.plant_id = plant_id
+        self.device_sn = device_sn
+        self.api = api
+        self.session = api.session
+
+    def get_url(self, page):
+        return self.api.get_url(page)
+
+    def get_system_status(self):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getSystemStatus",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_mix_energy(self, date):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getMixEnergy",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+                "date": date,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_energy_overview(self):
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getEnergyOverview",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+            },
+        )
+        return _obj_success_response(response)
+
+    def get_energy_prod_and_cons(self, date, timespan):
+        assert timespan in Timespan
+        date_str = timespan.format_date(date)
+
+        response = self.session.post(
+            self.get_url("newMixApi.do"),
+            params={
+                "op": "getEnergyProdAndCons",
+            },
+            data={
+                "plantId": self.plant_id,
+                "mixId": self.device_sn,
+                "date": date_str,
+                "type": timespan.value - 1,
+            },
+        )
+        return _obj_success_response(response)
